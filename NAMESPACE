@@ -1,0 +1,4 @@
+export("csc.test","csc.C1.test","csc.C3.test","pool_av.test","pool_av.S1.test","pool_av.S3.test","tc.test")
+importFrom(stats,pchisq)
+importFrom(stats,pnorm)
+importFrom(stats,pt)

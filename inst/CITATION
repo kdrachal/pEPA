@@ -1,0 +1,11 @@
+citHeader("To cite pEPA package in publications use:")
+       
+bibentry(bibtype="Manual",
+          title = "{''pEPA''}: {T}esting equal predictive accuracy for panels of forecasts",
+          author = "Krzysztof Drachal",
+          year = "2024",
+          url = "https://CRAN.R-project.org/package=pEPA",
+
+          textVersion = 
+          "Drachal, K., 2024. pEPA: Testing equal predictive accuracy for panels of forecasts. https://CRAN.R-project.org/package=pEPA"
+        ) 
