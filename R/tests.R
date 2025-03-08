@@ -154,7 +154,7 @@ pool_av.test <- function(evaluated1,evaluated2,realized,loss.type="SE",J=NULL)
 
     ret <- list(J_DM,J,paste(alt),pval,"QTZ test for the pooled average",nn)
     names(ret) <- c("statistic","parameter","alternative","p.value","method","data.name")
-    class(ret) <-"htest"
+    class(ret) <- "htest"
     return(ret)
   }
 
@@ -209,7 +209,7 @@ tc.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl)
 
     ret <- list(J_R,K,paste(alt),pval,"QTZ test for for time clusters",nn)
     names(ret) <- c("statistic","parameter","alternative","p.value","method","data.name")
-    class(ret) <-"htest"
+    class(ret) <- "htest"
     return(ret)
   }
 
@@ -272,7 +272,7 @@ csc.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl,dc=FALSE)
           }
         Om <- Om/T  
         Om <- .sqrtmat(Om)
-        Om <- solve(Om)  
+        Om <- .invmat(Om)  
         Ds <- as.vector(Om%*%rowSums(As))
       }
    
@@ -290,7 +290,7 @@ csc.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl,dc=FALSE)
 
     ret <- list(J_D,K,paste(alt),pval,"QTZ test for for cross-sectional clusters",nn)
     names(ret) <- c("statistic","parameter","alternative","p.value","method","data.name")
-    class(ret) <-"htest"
+    class(ret) <- "htest"
     return(ret)
   }
 
@@ -300,8 +300,10 @@ csc.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl,dc=FALSE)
       {
         r <- eigen(A)
         V <- r$vectors
-        D <- diag(r$values)
-        D <- sqrt(D)
+        d <- r$values
+        d[d<0] <- 0.000001 
+        d <- sqrt(d)
+        D <- diag(d)
     
         out <- V %*% D %*% t(V)
       }
@@ -313,7 +315,30 @@ csc.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl,dc=FALSE)
     return(out)
   }
 
-
+.invmat <- function(A)
+  {
+    if (ncol(A)>1)
+      {
+        M <- svd(A)
+        d <- M$d
+        U <- M$u
+        V <- M$v
+        d[d<=0] <- 0.000001 
+        d <- (d)^(-1)
+        D <- diag(d)
+    
+        out <- V %*% D %*% t(U)
+      }
+    else
+      {
+        A[A<=0] <- 0.000001
+        out <- (A)^(-1)
+      }
+    
+    return(out)
+  }
+  
+  
 ### S1 test for the pooled average
 ###
 ### H0: pooled average loss is equal in expectation for a pair of forecasts from both methods
@@ -371,7 +396,7 @@ pool_av.S1.test <- function(evaluated1,evaluated2,realized,loss.type="SE")
 
     ret <- list(S1,paste(alt),pval,"S1 APUY test for the pooled average",nn)
     names(ret) <- c("statistic","alternative","p.value","method","data.name")
-    class(ret) <-"htest"
+    class(ret) <- "htest"
     return(ret)
   }
 
@@ -436,7 +461,7 @@ pool_av.S3.test <- function(evaluated1,evaluated2,realized,loss.type="SE")
 
     ret <- list(S3,paste(alt),pval,"S3 APUY test for the pooled average",nn)
     names(ret) <- c("statistic","alternative","p.value","method","data.name")
-    class(ret) <-"htest"
+    class(ret) <- "htest"
     return(ret)
   }
 
@@ -514,10 +539,17 @@ csc.C1.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl)
           }
       }
     sig <- sig/T
- 
-    C1 <- (t(as.matrix(Ds)))%*%(solve(sig))%*%(as.matrix(Ds))
-   
-    pval <- 2 * min(pchisq(q=C1,df=K,lower.tail=FALSE),1 - pchisq(q=C1,df=K,lower.tail=FALSE))
+
+    if (det(sig)==0)
+      { 
+        C1 <- NaN
+        pval <- NaN
+      }
+    else
+      {
+        C1 <- (t(as.matrix(Ds)))%*%(.invmat(sig))%*%(as.matrix(Ds))
+        pval <- pchisq(q=C1,df=K,lower.tail=FALSE)
+      }
    
     names(C1) <- "statistic"
     names(K) <- "number of cross-sectional clusters"
@@ -525,7 +557,7 @@ csc.C1.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl)
 
     ret <- list(C1,K,paste(alt),pval,"C1 APUY test for for cross-sectional clusters",nn)
     names(ret) <- c("statistic","parameter","alternative","p.value","method","data.name")
-    class(ret) <-"htest"
+    class(ret) <- "htest"
     return(ret)
   }
 
@@ -576,41 +608,18 @@ csc.C3.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl)
         Ds[i] <- D
       }
  
-    I <- diag(1,nrow=K,ncol=K)
- 
-    sig <- matrix(0,nrow=K,ncol=K)
-    for (i in 1:n)
-      {
-        for (j in 1:n)
-          {
-            for (t in 1:T)
-              {
-                for (s in 1:T)
-                  {
-                    temp1 <- d_L_til[i,t]*d_L_til[i,s]
-                    temp2 <- (abs(t-s))/(T^(1/3))
-                   
-                    if (abs(temp2) <= 1)
-                      {
-                        temp2 <- 1-abs(temp2)
-                      }
-                    else
-                      {
-                        temp2 <- 0
-                      }
-                    
-                    gi <- I[,id[i],drop=FALSE]
-                    gj <- I[,id[j],drop=FALSE]
-                    sig <- sig+(((as.numeric(temp1)*temp2)/((H[id[i]]*H[id[j]])^0.5))*(gi%*%t(gj))) 
-                  }
-              }
-            }
+    sig <- sigC3(d_L_til,K,T,n,id,H)
+    
+    if (det(sig)==0)
+      { 
+        C3 <- NaN
+        pval <- NaN
       }
-    sig <- sig/T
- 
-    C3 <- (t(as.matrix(Ds)))%*%(solve(sig))%*%(as.matrix(Ds))
-   
-    pval <- 2 * min(pchisq(q=C3,df=K,lower.tail=FALSE),1 - pchisq(q=C3,df=K,lower.tail=FALSE))
+    else
+      {
+        C3 <- (t(as.matrix(Ds)))%*%(.invmat(sig))%*%(as.matrix(Ds))
+        pval <- pchisq(q=C3,df=K,lower.tail=FALSE)
+      }
    
     names(C3) <- "statistic"
     names(K) <- "number of cross-sectional clusters"
@@ -618,7 +627,7 @@ csc.C3.test <- function(evaluated1,evaluated2,realized,loss.type="SE",cl)
 
     ret <- list(C3,K,paste(alt),pval,"C3 APUY test for for cross-sectional clusters",nn)
     names(ret) <- c("statistic","parameter","alternative","p.value","method","data.name")
-    class(ret) <-"htest"
+    class(ret) <- "htest"
     return(ret)
   }
 

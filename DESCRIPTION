@@ -1,9 +1,11 @@
 Package: pEPA
 Type: Package
 Title: Tests of Equal Predictive Accuracy for Panels of Forecasts 
-Version: 1.0
+Version: 1.2
 Depends: R (>= 2.10) 
-Date: 2024-07-07
+Imports: Rcpp
+LinkingTo: Rcpp, RcppArmadillo
+Date: 2025-03-07
 Authors@R: person("Krzysztof", "Drachal", role = c("aut","cre"), email="kdrachal@wne.uw.edu.pl", comment = "Faculty of Economic Sciences, University of Warsaw, Poland")
 Author: Krzysztof Drachal [aut, cre] (Faculty of Economic Sciences, University of Warsaw, Poland)
 Maintainer: Krzysztof Drachal <kdrachal@wne.uw.edu.pl>

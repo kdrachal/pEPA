@@ -1,3 +1,12 @@
+1.2 2025-03-07
+
+* Corrections for p-value estimation in csc.C1.test() and csc.C3.test().  
+
+1.1 2024-07-30
+
+* Corrections for numerical approximations in csc.C1.test(), csc.C3.test() and the computation of the square root of a matrix added. 
+* C++ code added in order to accelerate computations in csc.C3.test(). 
+
 1.0 2024-07-07
 
 * Initial release. 
